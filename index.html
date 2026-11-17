@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Aries Café | Inventario y Recetas</title>
+  <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+  <link rel="stylesheet" href="inventario.css">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo-wrap">
+        <img src="img/logo.jpeg" alt="Logo Aries Café" class="brand-logo"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="brand-icon" style="display:none;"><i class="ri-archive-drawer-fill"></i></div>
+      </div>
+      <div class="brand-text">
+        <div class="brand-title-row">
+          <h1>Aries Café</h1>
+          <span class="brand-badge">ALMACÉN</span>
+        </div>
+        <span class="subtitle">Almacén de Insumos, Menú y Recetas</span>
+      </div>
+    </div>
+
+    <!-- SUB-NAVEGACIÓN INTEGRADA EN BARRA SUPERIOR -->
+    <nav class="subpanel-nav inv-subnav" aria-label="Secciones de inventario">
+      <button class="subpanel-tab active" data-target="tab-insumos" onclick="cambiarTabInventario('tab-insumos', this)">
+        <i class="ri-flask-line"></i> <span>Materia Prima e Insumos</span>
+      </button>
+      <button class="subpanel-tab" data-target="tab-productos" onclick="cambiarTabInventario('tab-productos', this)">
+        <i class="ri-book-open-line"></i> <span>Bebidas, Postres y Recetas</span>
+      </button>
+    </nav>
+
+    <div class="topbar-actions">
+      <button class="btn-sync-manual" onclick="cargarDatosInventario()" title="Sincronizar con Google Sheets">
+        <i class="ri-refresh-line"></i> <span>Sincronizar</span>
+      </button>
+
+      <!-- Regresar al Punto de Venta -->
+      <a href="index.html" class="nav-link-panel">
+        <i class="ri-store-2-line"></i> <span>Volver al Punto de Venta</span>
+      </a>
+
+      <div class="status-sync" id="sync-status">
+        <span class="dot online"></span> <span id="sync-text">Conectado</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- BANNER DE ALERTA DE INSUMOS BAJOS -->
+  <div id="alerta-banner" class="alerta-banner hidden">
+    <div class="alerta-content">
+      <i class="ri-alarm-warning-fill"></i>
+      <span id="alerta-mensaje">Atención: Hay insumos por terminarse.</span>
+    </div>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="panel active">
+
+    <!-- RESUMEN RÁPIDO DE ALMACÉN -->
+    <section class="daily-finance-bar">
+      <div class="finance-pill">
+        <span class="fp-label"><i class="ri-stack-fill text-info"></i> Total Insumos</span>
+        <strong id="kpi-total-insumos">0</strong>
+      </div>
+      <div class="finance-pill">
+        <span class="fp-label"><i class="ri-alarm-warning-fill text-danger"></i> Stock Bajo</span>
+        <strong id="kpi-insumos-bajos" class="text-danger">0</strong>
+      </div>
+      <div class="finance-pill">
+        <span class="fp-label"><i class="ri-cup-fill text-success"></i> Bebidas en Menú</span>
+        <strong id="kpi-total-bebidas">0</strong>
+      </div>
+      <div class="finance-pill highlight">
+        <span class="fp-label"><i class="ri-cake-3-fill"></i> Postres (Directos)</span>
+        <strong id="kpi-total-postres">0</strong>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         SECCIÓN 1: MATERIA PRIMA E INSUMOS
+    ========================================================== -->
+    <div id="tab-insumos" class="subpanel-view active">
+      <div class="inv-grid-layout">
+        
+        <!-- FORMULARIO ALTA / EDICIÓN DE INSUMO -->
+        <section class="finance-form-card" id="card-form-insumo">
+          <div class="card-title-row">
+            <h3 id="titulo-form-insumo"><i class="ri-add-circle-line"></i> Nuevo Insumo</h3>
+            <span class="badge-sheets">Pestaña: Insumos</span>
+          </div>
+          <p class="card-desc">Registra café, leche, jarabes, vasos o tapas para descontarlos en cada venta.</p>
+
+          <form id="form-insumo">
+            <input type="hidden" id="insumo-id">
+
+            <div class="form-group">
+              <label>Nombre del Insumo</label>
+              <input type="text" id="insumo-nombre" required placeholder="Ej. Café en Grano, Leche Deslactosada, Vaso 16 oz...">
+            </div>
+
+            <div class="form-group">
+              <label>Unidad de Medida</label>
+              <select id="insumo-unidad" required>
+                <option value="g">Gramos (g)</option>
+                <option value="ml">Mililitros (ml)</option>
+                <option value="pza">Piezas (pza)</option>
+                <option value="kg">Kilogramos (kg)</option>
+                <option value="L">Litros (L)</option>
+                <option value="oz">Onzas (oz)</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Stock Actual</label>
+                <input type="number" id="insumo-stock" step="0.01" min="0" inputmode="decimal" required placeholder="0">
+              </div>
+              <div class="form-group">
+                <label>Stock Mínimo (Alerta)</label>
+                <input type="number" id="insumo-minimo" step="0.01" min="0" inputmode="decimal" required placeholder="0">
+              </div>
+            </div>
+
+            <div class="form-actions-row">
+              <button type="submit" class="btn-primary btn-full" id="btn-guardar-insumo">
+                <i class="ri-save-3-line"></i> Guardar Insumo
+              </button>
+              <button type="button" class="btn-outline hidden" id="btn-cancelar-insumo" onclick="resetFormInsumo()">
+                Cancelar Edición
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- TABLA DE INSUMOS EN ALMACÉN -->
+        <section class="finance-history-card">
+          <div class="table-toolbar">
+            <div class="search-box" style="flex:1; min-width: 180px;">
+              <i class="ri-search-line"></i>
+              <input type="text" id="buscar-insumo" placeholder="Filtrar insumos por nombre...">
+            </div>
+            <label class="filter-check">
+              <input type="checkbox" id="solo-bajos"> Solo stock bajo
+            </label>
+          </div>
+
+          <div class="table-responsive" style="max-height: 540px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Existencia</th>
+                  <th>Mínimo</th>
+                  <th>Estado</th>
+                  <th style="text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-insumos"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- =========================================================
+         SECCIÓN 2: BEBIDAS, POSTRES Y RECETAS
+    ========================================================== -->
+    <div id="tab-productos" class="subpanel-view">
+      <div class="inv-grid-layout">
+        
+        <!-- FORMULARIO ALTA / EDICIÓN DE PRODUCTO Y RECETA -->
+        <section class="finance-form-card" id="card-form-producto">
+          <div class="card-title-row">
+            <h3 id="titulo-form-producto"><i class="ri-cup-line"></i> Nuevo Producto</h3>
+            <span class="badge-sheets">Pestaña: Productos</span>
+          </div>
+          <p class="card-desc">Los productos en categoría <strong>Postres</strong> se venden de forma directa sin descontar insumos.</p>
+
+          <form id="form-producto">
+            <input type="hidden" id="prod-id">
+
+            <div class="form-group">
+              <label>Nombre de la Bebida o Postre</label>
+              <input type="text" id="prod-nombre" required placeholder="Ej. Latte Vainilla 16 oz, Cheesecake Zarzamora...">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Categoría</label>
+                <select id="prod-categoria" required onchange="manejarCambioCategoria()">
+                  <option value="Calientes">Calientes</option>
+                  <option value="Frías">Frías</option>
+                  <option value="Especialidades">Especialidades</option>
+                  <option value="Postres">Postres (Venta Directa)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Precio de Venta ($)</label>
+                <input type="number" id="prod-precio" step="0.50" min="1" inputmode="decimal" required placeholder="0.00">
+              </div>
+            </div>
+
+            <!-- SECCIÓN DE RECETA (OCULTA SI ES POSTRE) -->
+            <div id="bloque-receta" class="receta-box">
+              <div class="receta-header">
+                <label><i class="ri-list-check-2"></i> Ingredientes de la Receta</label>
+                <button type="button" class="btn-add-ing" onclick="agregarFilaIngrediente()">
+                  <i class="ri-add-line"></i> Agregar Insumo
+                </button>
+              </div>
+              <small class="receta-hint">Define cuánto se descontará del almacén por cada unidad vendida.</small>
+
+              <div id="lista-ingredientes-receta" class="ingredientes-list">
+                <!-- Filas dinámicas de insumos -->
+              </div>
+            </div>
+
+            <div id="aviso-postre-directo" class="postre-info-box hidden">
+              <i class="ri-cake-3-line"></i>
+              <span>Este producto está marcado como <strong>Postre (Venta Directa)</strong>. Siempre estará disponible en el POS sin descontar materia prima.</span>
+            </div>
+
+            <div class="form-actions-row">
+              <button type="submit" class="btn-primary btn-full" id="btn-guardar-producto">
+                <i class="ri-save-3-line"></i> Guardar en Menú
+              </button>
+              <button type="button" class="btn-outline hidden" id="btn-cancelar-producto" onclick="resetFormProducto()">
+                Cancelar Edición
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- LISTADO DE BEBIDAS Y POSTRES -->
+        <section class="finance-history-card">
+          <div class="table-toolbar">
+            <div class="search-box" style="flex:1; min-width: 180px;">
+              <i class="ri-search-line"></i>
+              <input type="text" id="buscar-prod-inv" placeholder="Buscar bebida o postre en el menú...">
+            </div>
+            <select id="filtro-cat-inv" class="select-compact">
+              <option value="Todas">Todas las categorías</option>
+              <option value="Calientes">Calientes</option>
+              <option value="Frías">Frías</option>
+              <option value="Especialidades">Especialidades</option>
+              <option value="Postres">Postres</option>
+            </select>
+          </div>
+
+          <div id="lista-productos-inv" class="prod-inv-cards">
+            <!-- Renderizado dinámico -->
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL RÁPIDO PARA REABASTECER STOCK -->
+  <div id="modal-reabastecer" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3><i class="ri-add-box-line"></i> Reabastecer Insumo</h3>
+        <button class="close-modal" onclick="cerrarModal('modal-reabastecer')">&times;</button>
+      </div>
+      <form id="form-reabastecer">
+        <input type="hidden" id="reab-id">
+        <p style="font-size:0.9rem; margin-bottom:1rem; color:var(--text-muted);">
+          Sumar existencia a: <strong id="reab-nombre" style="color:var(--primary);"></strong><br>
+          Stock actual: <strong id="reab-actual"></strong>
+        </p>
+        <div class="form-group">
+          <label>Cantidad que ingresó al almacén (<span id="reab-unidad"></span>)</label>
+          <input type="number" id="reab-cantidad" step="0.01" min="0.01" inputmode="decimal" required placeholder="Ej. 1000">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" onclick="cerrarModal('modal-reabastecer')">Cancelar</button>
+          <button type="submit" class="btn-primary">Sumar al Inventario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="inventario.js"></script>
+</body>
+</html>
